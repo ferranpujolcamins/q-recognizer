@@ -3,4 +3,11 @@ name = "q-recognizer"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[[example]]
+name = "q-recognize-demo"
+path = "examples/demo.rs"
+
+[dev-dependencies]
+egui = "0.30"
+eframe = "0.30"
+egui_extras = "0.30"
