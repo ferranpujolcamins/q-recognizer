@@ -82,10 +82,10 @@ pub const LUT_SCALE_FACTOR: usize = MAX_INT_COORDINATES / LUT_SIZE;
 #[derive(Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Gesture {
-    /// Gesture points (normalized)
-    pub points: Vec<Point>,
     /// Gesture class
     pub name: String,
+    /// Gesture points (normalized)
+    pub points: Vec<Point>,
     /// Look-up table
     #[cfg_attr(feature = "serde", serde(skip))]
     pub lut: Option<Vec<Vec<usize>>>,

@@ -160,9 +160,14 @@ impl eframe::App for DemoApp {
         egui::SidePanel::left("gestures").show(ctx, |ui| {
             ui.label("Gestures:");
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for (i, gesture) in self.gestures.iter().enumerate() {
+                for gesture in self.gestures.iter_mut() {
                     ui.group(|ui| {
-                        ui.label(format!("Gesture {}", i + 1));
+                        ui.horizontal(|ui| {
+                            let mut new_name = gesture.name.clone();
+                            if ui.text_edit_singleline(&mut new_name).changed() {
+                                gesture.name = new_name;
+                            }
+                        });
                         let lines = points_to_lines(&gesture.points);
                         let desired_size = egui::vec2(80.0, 60.0);
                         let (response, painter) = ui.allocate_painter(desired_size, Sense::hover());
