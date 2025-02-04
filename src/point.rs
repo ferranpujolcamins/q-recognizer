@@ -63,7 +63,11 @@
  * SUCH DAMAGE.
 **/
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Point {
     pub x: f32,
     pub y: f32,

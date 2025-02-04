@@ -64,6 +64,8 @@
 **/
 
 use crate::{geometry, point::Point};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// Default number of points on the gesture path
 const SAMPLING_RESOLUTION: usize = 64;
@@ -78,6 +80,7 @@ pub const LUT_SCALE_FACTOR: usize = MAX_INT_COORDINATES / LUT_SIZE;
 /// For $P, gestures are normalized with respect to scale, translated to origin, and resampled into a fixed number of 32 points.
 /// For $Q, a LUT is also computed.
 #[derive(Clone)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Gesture {
     /// Gesture points (normalized)
     pub points: Vec<Point>,

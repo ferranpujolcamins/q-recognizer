@@ -11,7 +11,8 @@
             "cargo": {
                 "args": [
                     "run",
-                    "--example=q-recognize-demo"
+                    "--example=q-recognize-demo",
+                    "--features=serde"
                 ],
                 "filter": {
                     "name": "q_recognizer",
