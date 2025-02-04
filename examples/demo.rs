@@ -1,23 +1,27 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
+use std::fs;
+
 use eframe::egui;
 use egui::{emath, Color32, Frame, Pos2, Rect, Sense, Stroke, Ui};
+use egui_file_dialog::FileDialog;
 use q_recognizer::{
     gesture::Gesture,
     point::Point,
     q_point_cloud_recognizer::{self, QParameters},
 };
+use ron::ser::{to_string_pretty, PrettyConfig};
 
 fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 350.0]),
         ..Default::default()
     };
     eframe::run_native(
         "My egui App",
         options,
-        Box::new(|cc| Ok(Box::<DemoApp>::default())),
+        Box::new(|_| Ok(Box::<DemoApp>::default())),
     )
 }
 
@@ -27,6 +31,7 @@ struct DemoApp {
     stroke: Stroke,
     gestures: Vec<Gesture>,
     recognized_gesture: String,
+    file_dialog: FileDialog,
 }
 
 impl Default for DemoApp {
@@ -36,6 +41,9 @@ impl Default for DemoApp {
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
             gestures: Default::default(),
             recognized_gesture: Default::default(),
+            file_dialog: FileDialog::new()
+                .default_file_name("gestures.json")
+                .resizable(false)
         }
     }
 }
@@ -80,17 +88,25 @@ impl DemoApp {
 
     pub fn ui_control(&mut self, ui: &mut egui::Ui) -> egui::Response {
         ui.horizontal(|ui| {
-            if ui.button("Clear Drawing").clicked() {
-                self.lines.clear();
-                self.recognized_gesture.clear();
+            if ui.button("Export Gestures").clicked() {
+                self.file_dialog.save_file();
             }
-            ui.separator();
+            self.file_dialog.update(ui.ctx());
+            if let Some(path) = self.file_dialog.picked() {
+                let data = to_string_pretty(&self.gestures, PrettyConfig::default()).unwrap();
+                fs::write(path, data).unwrap();
+            }
+
             if ui.button("Save Gesture").clicked() {
                 self.save_gesture()
             }
-            ui.separator();
             if ui.button("Recognize Gesture").clicked() {
                 self.recognized_gesture = self.recognize_gesture();
+            }
+            ui.separator();
+            if ui.button("Clear Drawing").clicked() {
+                self.lines.clear();
+                self.recognized_gesture.clear();
             }
             ui.label(self.recognized_gesture.clone());
         })
