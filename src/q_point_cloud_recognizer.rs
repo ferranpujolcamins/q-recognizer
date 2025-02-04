@@ -65,7 +65,7 @@
 
 use crate::{geometry::sqr_euclidean_distance, gesture::{Gesture, LUT_SCALE_FACTOR}, point::Point};
 
-struct QParameters {
+pub struct QParameters {
     // $Q's two major optimization layers (Early Abandoning and Lower Bounding)
     // can be activated / deactivated as desired
     pub use_early_abandoning: bool,
@@ -158,8 +158,8 @@ fn compute_lower_bound(
         lb[0] += (n - i) as f32 * dist;
     }
 
-    let mut i = 0;
-    let mut index_lb = 0;
+    let mut i = step;
+    let mut index_lb = 1;
     while i < n {
         lb[index_lb] = lb[0] + (i as f32)*sat[n-1] - (n as f32)*sat[i-1];
 
