@@ -7,7 +7,7 @@ use q_recognizer::{gesture::Gesture, point::Point, q_point_cloud_recognizer::{se
 
 fn main() -> eframe::Result {    
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([420.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 240.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -59,7 +59,12 @@ impl DemoApp {
 
     fn recognize_gesture(&self) -> String {
         let gesture = Gesture::new(lines_to_points(&self.lines), "Unknown");
-        q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default())
+        let result = q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default());
+        if result.distance > 10. {
+            format!("No match (distance: {:.3})", result.distance)
+        } else {
+            result.class
+        }
     }
 
     pub fn ui_control(&mut self, ui: &mut egui::Ui) -> egui::Response {

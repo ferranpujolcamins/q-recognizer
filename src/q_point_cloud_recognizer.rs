@@ -81,10 +81,15 @@ impl Default for QParameters {
     }
 }
 
+pub struct ClassifyResult {
+    pub class: String,
+    pub distance: f32
+}
+
 /// Main function of the $Q recognizer.
 /// Classifies a candidate gesture against a set of templates.
 /// Returns the class of the closest neighbor in the template set.
-pub fn classify(candidate: &Gesture, template_set: &[Gesture], params: &QParameters) -> String {
+pub fn classify(candidate: &Gesture, template_set: &[Gesture], params: &QParameters) -> ClassifyResult {
     let mut best_class = String::new();
     let mut min_dist = f32::MAX;
     for template in template_set {
@@ -94,7 +99,10 @@ pub fn classify(candidate: &Gesture, template_set: &[Gesture], params: &QParamet
             best_class = template.name.clone();
         }
     }
-    best_class
+    ClassifyResult {
+        class: best_class,
+        distance: min_dist
+    }
 }
 
 /// Implements greedy search for a minimum-distance matching between two point clouds.
