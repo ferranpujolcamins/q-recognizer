@@ -84,43 +84,38 @@ pub const LUT_SCALE_FACTOR: usize = MAX_INT_COORDINATES / LUT_SIZE;
 pub struct Gesture {
     /// Gesture points (normalized)
     pub points: Vec<Point>,
-    /// Gesture points (not normalized, as captured from the input device)
-    pub points_raw: Vec<Point>,
     /// Gesture class
     pub name: String,
     /// Look-up table
+    #[cfg_attr(feature = "serde", serde(skip))]
     pub lut: Option<Vec<Vec<usize>>>,
 }
 
 impl Gesture {
     /// Constructs a new gesture from a list of points and a name
     pub fn new(pts: Vec<Point>, name: &str) -> Self {
-        let points_raw = pts.iter().cloned().collect();
         let mut g = Self {
-            points: Vec::new(),
-            points_raw,
+            points: pts,
             name: name.into(),
             lut: None,
         };
-        g.normalize(true);
+        g.normalize();
         g
     }
 
     /// Normalizes the gesture path. 
     /// The $Q recognizer requires an extra normalization step, the computation of the LUT, 
     /// which can be enabled with the computeLUT parameter.
-    pub fn normalize(&mut self, compute_lut: bool) {
+    pub fn normalize(&mut self) {
         // standard $-family processing: resample, scale, and translate to origin
-        self.points = Self::resample(&self.points_raw, SAMPLING_RESOLUTION);
+        self.points = Self::resample(&self.points, SAMPLING_RESOLUTION);
         self.points = Self::scale(&self.points);
         let c = Self::centroid(&self.points);
         self.points = Self::translate_to(&self.points, &c);
 
         // constructs a lookup table for fast lower bounding (used by $Q)
-        if compute_lut {
-            self.transform_coordinates_to_integers();
-            self.construct_lut();
-        }
+        self.transform_coordinates_to_integers();
+        self.construct_lut();
     }
 
     /// Performs scale normalization with shape preservation into [0..1]x[0..1]
