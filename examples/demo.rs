@@ -3,6 +3,7 @@
 
 use eframe::egui;
 use egui::{emath, Color32, Frame, Pos2, Rect, Sense, Stroke, Ui};
+use q_recognizer::{gesture::Gesture, point::Point, q_point_cloud_recognizer::{self, QParameters}};
 
 fn main() -> eframe::Result {    
     let options = eframe::NativeOptions {
@@ -25,6 +26,8 @@ struct DemoApp {
     /// in 0-1 normalized coordinates
     lines: Vec<Vec<Pos2>>,
     stroke: Stroke,
+    gestures: Vec<Gesture>,
+    recognized_gesture: String,
 }
 
 impl Default for DemoApp {
@@ -32,19 +35,51 @@ impl Default for DemoApp {
         Self {
             lines: Default::default(),
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
+            gestures: Default::default(),
+            recognized_gesture: Default::default(),
         }
     }
 }
 
 impl DemoApp {
+    fn save_gesture(&mut self) {
+        let name = format!("Gesture {}", self.gestures.len() + 1);
+
+        let points = self.lines.iter().enumerate().flat_map(|(i, line)| {
+            line.iter().map(move |p| {
+                Point::new(p.x, p.y, i as i32)
+            })
+        }).collect();
+        let gesture = Gesture::new(points, &name);
+        self.gestures.push(gesture);
+        self.lines.clear();
+    }
+
+    fn recognize_gesture(&self) -> String {
+        let points = self.lines.iter().enumerate().flat_map(|(i, line)| {
+            line.iter().map(move |p| {
+                Point::new(p.x, p.y, i as i32)
+            })
+        }).collect();
+        let gesture = Gesture::new(points, "Unknown");
+        q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default())
+    }
+
     pub fn ui_control(&mut self, ui: &mut egui::Ui) -> egui::Response {
         ui.horizontal(|ui| {
-            ui.label("Stroke:");
-            ui.add(&mut self.stroke);
-            ui.separator();
-            if ui.button("Clear Painting").clicked() {
+            if ui.button("Clear Drawing").clicked() {
                 self.lines.clear();
+                self.recognized_gesture.clear();
             }
+            ui.separator();
+            if ui.button("Save Gesture").clicked() {
+                self.save_gesture()
+            }
+            ui.separator();
+            if ui.button("Recognize Gesture").clicked() {
+                self.recognized_gesture = self.recognize_gesture();
+            }
+            ui.label(self.recognized_gesture.clone());
         })
         .response
     }

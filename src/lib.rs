@@ -1,6 +1,6 @@
 mod geometry;
-mod gesture;
-mod point;
-mod point_cloud_recognizer;
-mod point_cloud_recognizer_plus;
-mod q_point_cloud_recognizer;
+pub mod gesture;
+pub mod point;
+pub mod point_cloud_recognizer;
+pub mod point_cloud_recognizer_plus;
+pub mod q_point_cloud_recognizer;
