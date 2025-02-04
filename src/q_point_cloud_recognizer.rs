@@ -110,7 +110,7 @@ fn greedy_cloud_match(gesture1: &Gesture, gesture2: &Gesture, mut min_so_far: f3
             // direction of matching: gesture1 --> gesture2
             let lb1 = compute_lower_bound(&gesture1.points, &gesture2.points, gesture2.lut.as_ref().unwrap(), step);
             // direction of matching: gesture2 --> gesture1
-            let lb2 = compute_lower_bound(&gesture2.points, &gesture1.points, &gesture1.lut.as_ref().unwrap(), step);
+            let lb2 = compute_lower_bound(&gesture2.points, &gesture1.points, gesture1.lut.as_ref().unwrap(), step);
 
             let mut i = 0;
             let mut index_lb = 0;
@@ -143,11 +143,11 @@ fn greedy_cloud_match(gesture1: &Gesture, gesture2: &Gesture, mut min_so_far: f3
 fn compute_lower_bound(
     points1: &[Point],
     points2: &[Point],
-    lut: &Vec<Vec<usize>>,
+    lut: &[Vec<usize>],
     step: usize
 ) -> Vec<f32> {
     let n = points1.len();
-    let mut lb = vec![0.0; n / step as usize + 1];
+    let mut lb = vec![0.0; n / step + 1];
     let mut sat = vec![0.0; n];
 
     for i in 0..n {
