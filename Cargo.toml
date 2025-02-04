@@ -1,12 +1,12 @@
 [package]
 name = "q-recognizer"
+description = "Rust implementation of the $Q, $P, and $P+ gesture recognizers."
 version = "0.1.0"
 edition = "2021"
 authors = ["Ferran Pujol Camins"]
 readme = "README.md"
 repository = "https://github.com/ferranpujolcamins/q-recognizer"
 license = "BSD-3-Clause"
-license-file = "LICENSE"
 keywords = ["gesture", "recognition", "gesture-recognition"]
 categories = ["graphics", "gui"]
 
