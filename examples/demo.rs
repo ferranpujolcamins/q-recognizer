@@ -3,9 +3,13 @@
 
 use eframe::egui;
 use egui::{emath, Color32, Frame, Pos2, Rect, Sense, Stroke, Ui};
-use q_recognizer::{gesture::Gesture, point::Point, q_point_cloud_recognizer::{self, QParameters}};
+use q_recognizer::{
+    gesture::Gesture,
+    point::Point,
+    q_point_cloud_recognizer::{self, QParameters},
+};
 
-fn main() -> eframe::Result {    
+fn main() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([500.0, 240.0]),
         ..Default::default()
@@ -13,12 +17,7 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "My egui App",
         options,
-        Box::new(|cc| {
-            // This gives us image support:
-            egui_extras::install_image_loaders(&cc.egui_ctx);
-
-            Ok(Box::<DemoApp>::default())
-        }),
+        Box::new(|cc| Ok(Box::<DemoApp>::default())),
     )
 }
 
@@ -42,11 +41,22 @@ impl Default for DemoApp {
 }
 
 fn lines_to_points(lines: &[Vec<Pos2>]) -> Vec<Point> {
-    lines.iter().enumerate().flat_map(|(i, line)| {
-        line.iter().map(move |p| {
-            Point::new(p.x, p.y, i as i32)
-        })
-    }).collect()
+    lines
+        .iter()
+        .enumerate()
+        .flat_map(|(i, line)| line.iter().map(move |p| Point::new(p.x, p.y, i as i32)))
+        .collect()
+}
+
+fn points_to_lines(points: &Vec<Point>) -> Vec<Vec<Pos2>> {
+    let mut lines = vec![];
+    for point in points {
+        while lines.len() <= point.stroke_id as usize {
+            lines.push(vec![]);
+        }
+        lines[point.stroke_id as usize].push(Pos2::new(point.x, point.y));
+    }
+    lines
 }
 
 impl DemoApp {
@@ -59,7 +69,8 @@ impl DemoApp {
 
     fn recognize_gesture(&self) -> String {
         let gesture = Gesture::new(lines_to_points(&self.lines), "Unknown");
-        let result = q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default());
+        let result =
+            q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default());
         if result.distance > 10. {
             format!("No match (distance: {:.3})", result.distance)
         } else {
@@ -130,7 +141,47 @@ impl DemoApp {
 
 impl eframe::App for DemoApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-    egui::CentralPanel::default().show(ctx, |ui| {
+        egui::SidePanel::left("gestures").show(ctx, |ui| {
+            ui.label("Gestures:");
+            for (i, gesture) in self.gestures.iter().enumerate() {
+                ui.group(|ui| {
+                    ui.label(format!("Gesture {}", i + 1));
+                    let lines = points_to_lines(&gesture.points);
+                    let desired_size = egui::vec2(80.0, 60.0);
+                    let (response, painter) = ui.allocate_painter(desired_size, Sense::hover());
+
+                    // Compute a bounding box for all points
+                    let mut min = Pos2::new(f32::MAX, f32::MAX);
+                    let mut max = Pos2::new(f32::MIN, f32::MIN);
+                    for line in &lines {
+                        for &p in line {
+                            min.x = min.x.min(p.x);
+                            min.y = min.y.min(p.y);
+                            max.x = max.x.max(p.x);
+                            max.y = max.y.max(p.y);
+                        }
+                    }
+                    let bounds = Rect::from_min_max(min, max);
+                    let transform = egui::emath::RectTransform::from_to(bounds, response.rect);
+
+                    // Draw each line
+                    for line in lines {
+                        if line.len() < 2 {
+                            continue;
+                        }
+                        let points: Vec<Pos2> = line.iter().map(|&p| transform * p).collect();
+                        painter.line_segment(
+                            points.windows(2).flatten().cloned().collect::<Vec<_>>()[..2].try_into().unwrap(),
+                            self.stroke,
+                        );
+                        for w in points.windows(2).skip(1) {
+                            painter.line_segment(w.try_into().unwrap(), self.stroke);
+                        }
+                    }
+                });
+            }
+        });
+        egui::CentralPanel::default().show(ctx, |ui| {
             self.ui_control(ui);
             ui.label("Paint with your mouse/touch!");
             Frame::canvas(ui.style()).show(ui, |ui| {
