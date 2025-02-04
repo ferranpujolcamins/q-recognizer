@@ -7,7 +7,7 @@ use q_recognizer::{gesture::Gesture, point::Point, q_point_cloud_recognizer::{se
 
 fn main() -> eframe::Result {    
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        viewport: egui::ViewportBuilder::default().with_inner_size([420.0, 240.0]),
         ..Default::default()
     };
     eframe::run_native(
@@ -41,27 +41,24 @@ impl Default for DemoApp {
     }
 }
 
+fn lines_to_points(lines: &[Vec<Pos2>]) -> Vec<Point> {
+    lines.iter().enumerate().flat_map(|(i, line)| {
+        line.iter().map(move |p| {
+            Point::new(p.x, p.y, i as i32)
+        })
+    }).collect()
+}
+
 impl DemoApp {
     fn save_gesture(&mut self) {
         let name = format!("Gesture {}", self.gestures.len() + 1);
-
-        let points = self.lines.iter().enumerate().flat_map(|(i, line)| {
-            line.iter().map(move |p| {
-                Point::new(p.x, p.y, i as i32)
-            })
-        }).collect();
-        let gesture = Gesture::new(points, &name);
+        let gesture = Gesture::new(lines_to_points(&self.lines), &name);
         self.gestures.push(gesture);
         self.lines.clear();
     }
 
     fn recognize_gesture(&self) -> String {
-        let points = self.lines.iter().enumerate().flat_map(|(i, line)| {
-            line.iter().map(move |p| {
-                Point::new(p.x, p.y, i as i32)
-            })
-        }).collect();
-        let gesture = Gesture::new(points, "Unknown");
+        let gesture = Gesture::new(lines_to_points(&self.lines), "Unknown");
         q_point_cloud_recognizer::classify(&gesture, &self.gestures, &QParameters::default())
     }
 
