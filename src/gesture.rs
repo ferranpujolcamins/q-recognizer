@@ -65,7 +65,7 @@
 
 use crate::{geometry, point::Point};
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 /// Default number of points on the gesture path
 const SAMPLING_RESOLUTION: usize = 64;

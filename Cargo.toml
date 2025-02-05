@@ -10,17 +10,21 @@ license = "BSD-3-Clause"
 keywords = ["gesture", "recognition", "gesture-recognition"]
 categories = ["graphics", "gui"]
 
+[features]
+serde = ["dep:serde", "dep:serde_derive"]
+
 [[example]]
 name = "q-recognize-demo"
-path = "examples/demo.rs"
+path = "examples/src/main.rs"
 required-features = ["serde"]
 
 [dependencies]
 serde = { version = "1.0", optional = true }
+serde_derive = { version = "1.0", optional = true }
 
 [dev-dependencies]
 egui = "0.30"
 eframe = "0.30"
 egui_extras = "0.30"
-egui-file-dialog = "0.8"
-ron = "0.8"
+rfd = "^0.15"
+ron = "^0.8"

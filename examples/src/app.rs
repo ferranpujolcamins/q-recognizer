@@ -1,37 +1,29 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
-use std::fs;
-
 use eframe::egui;
 use egui::{emath, Color32, Frame, Pos2, Rect, Sense, Stroke, Ui};
-use egui_file_dialog::FileDialog;
+#[cfg(target_arch = "wasm32")]
+use rfd::AsyncFileDialog;
+#[cfg(not(target_arch = "wasm32"))]
+use rfd::FileDialog;
+#[cfg(not(target_arch = "wasm32"))]
+use std::fs;
 use q_recognizer::{
     gesture::Gesture,
     point::Point,
     q_point_cloud_recognizer::{self, QParameters},
 };
 use ron::ser::{to_string_pretty, PrettyConfig};
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen_futures::spawn_local;
 
-fn main() -> eframe::Result {
-    let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([600.0, 350.0]),
-        ..Default::default()
-    };
-    eframe::run_native(
-        "My egui App",
-        options,
-        Box::new(|_| Ok(Box::<DemoApp>::default())),
-    )
-}
-
-struct DemoApp {
+pub struct DemoApp {
     /// in 0-1 normalized coordinates
     lines: Vec<Vec<Pos2>>,
     stroke: Stroke,
     gestures: Vec<Gesture>,
     recognized_gesture: String,
-    file_dialog: FileDialog,
 }
 
 impl Default for DemoApp {
@@ -41,9 +33,6 @@ impl Default for DemoApp {
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
             gestures: Default::default(),
             recognized_gesture: Default::default(),
-            file_dialog: FileDialog::new()
-                .default_file_name("gestures.json")
-                .resizable(false)
         }
     }
 }
@@ -68,6 +57,31 @@ fn points_to_lines(points: &Vec<Point>) -> Vec<Vec<Pos2>> {
 }
 
 impl DemoApp {
+    #[cfg(target_arch = "wasm32")]
+    fn export_gestures(&self) {
+        let content = to_string_pretty(&self.gestures, PrettyConfig::default()).unwrap();
+        spawn_local(async move {
+            if let Some(file_handle) = AsyncFileDialog::new()
+                .set_file_name("gestures.ron")
+                .save_file()
+                .await
+            {
+                file_handle.write(content.as_bytes()).await.unwrap();
+            }
+        });
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn export_gestures(&self) {
+        let content = to_string_pretty(&self.gestures, PrettyConfig::default()).unwrap();
+        if let Some(path) = FileDialog::new()
+            .set_file_name("gestures.ron")
+            .save_file()
+        {
+            fs::write(path, content).unwrap();
+        }
+    }
+
     fn save_gesture(&mut self) {
         let name = format!("Gesture {}", self.gestures.len() + 1);
         let gesture = Gesture::new(lines_to_points(&self.lines), &name);
@@ -89,14 +103,8 @@ impl DemoApp {
     pub fn ui_control(&mut self, ui: &mut egui::Ui) -> egui::Response {
         ui.horizontal(|ui| {
             if ui.button("Export Gestures").clicked() {
-                self.file_dialog.save_file();
+                self.export_gestures();
             }
-            self.file_dialog.update(ui.ctx());
-            if let Some(path) = self.file_dialog.picked() {
-                let data = to_string_pretty(&self.gestures, PrettyConfig::default()).unwrap();
-                fs::write(path, data).unwrap();
-            }
-
             if ui.button("Save Gesture").clicked() {
                 self.save_gesture()
             }

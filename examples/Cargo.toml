@@ -1,0 +1,19 @@
+[package]
+name = "q-recognize-demo"
+description = "Rust implementation of the $Q, $P, and $P+ gesture recognizers."
+version = "0.1.1"
+edition = "2021"
+authors = ["Ferran Pujol Camins"]
+license = "BSD-3-Clause"
+
+[dependencies]
+q-recognizer = { path = "..", features = ["serde"] }
+egui = "0.30"
+eframe = "0.30"
+egui_extras = "0.30"
+rfd = "^0.15"
+ron = "^0.8"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3.70"
