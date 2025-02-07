@@ -4,7 +4,9 @@
 		{
 			"type": "cargo",
 			"command": "build",
-			"args": ["--all-targets"],
+			"args": [
+				"--all-targets"
+			],
 			"problemMatcher": [
 				"$rustc"
 			],
@@ -13,6 +15,15 @@
 				"isDefault": true
 			},
 			"label": "rust: cargo build"
+		},
+		{
+			"type": "shell",
+			"command": "trunk serve -a 0.0.0.0",
+			"options": {
+				"cwd": "${workspaceFolder}/examples"
+			},
+			"label": "trunk serve",
+			"problemMatcher": []
 		}
 	]
 }
