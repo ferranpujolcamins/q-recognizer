@@ -15,8 +15,11 @@ use q_recognizer::{
     q_point_cloud_recognizer::{self, QParameters},
 };
 use ron::ser::{to_string_pretty, PrettyConfig};
+use ron::de::from_str;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen_futures::spawn_local;
+#[cfg(target_arch = "wasm32")]
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct DemoApp {
     /// in 0-1 normalized coordinates
@@ -24,15 +27,26 @@ pub struct DemoApp {
     stroke: Stroke,
     gestures: Vec<Gesture>,
     recognized_gesture: String,
+    #[cfg(target_arch = "wasm32")]
+    gesture_receiver: Receiver<Vec<Gesture>>,
+    #[cfg(target_arch = "wasm32")]
+    gesture_sender: Sender<Vec<Gesture>>,
 }
 
 impl Default for DemoApp {
     fn default() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        let (gesture_sender, gesture_receiver) = channel();
+        
         Self {
             lines: Default::default(),
             stroke: Stroke::new(1.0, Color32::from_rgb(25, 200, 100)),
             gestures: Default::default(),
             recognized_gesture: Default::default(),
+            #[cfg(target_arch = "wasm32")]
+            gesture_receiver,
+            #[cfg(target_arch = "wasm32")]
+            gesture_sender,
         }
     }
 }
@@ -82,6 +96,29 @@ impl DemoApp {
         }
     }
 
+    #[cfg(target_arch = "wasm32")]
+    fn load_gestures(&mut self) {
+        let sender = self.gesture_sender.clone();
+        spawn_local(async move {
+            if let Some(file_handle) = AsyncFileDialog::new().pick_file().await {
+                let content = file_handle.read().await;
+                if let Ok(gestures) = from_str::<Vec<Gesture>>(std::str::from_utf8(&content).unwrap()) {
+                    let _ = sender.send(gestures);
+                }
+            }
+        });
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn load_gestures(&mut self) {
+        if let Some(path) = FileDialog::new().pick_file() {
+            let content = fs::read_to_string(path).unwrap();
+            if let Ok(gestures) = from_str::<Vec<Gesture>>(&content) {
+                self.gestures = gestures;
+            }
+        }
+    }
+
     fn save_gesture(&mut self) {
         let name = format!("Gesture {}", self.gestures.len() + 1);
         let gesture = Gesture::new(lines_to_points(&self.lines), &name);
@@ -102,6 +139,9 @@ impl DemoApp {
 
     pub fn ui_control(&mut self, ui: &mut egui::Ui) -> egui::Response {
         ui.horizontal(|ui| {
+            if ui.button("Load Gestures").clicked() {
+                self.load_gestures();
+            }
             if ui.button("Export Gestures").clicked() {
                 self.export_gestures();
             }
@@ -165,6 +205,14 @@ impl DemoApp {
 
 impl eframe::App for DemoApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        #[cfg(target_arch = "wasm32")]
+        {
+            // Check for any gestures received from async operations
+            if let Ok(gestures) = self.gesture_receiver.try_recv() {
+                self.gestures = gestures;
+            }
+        }
+        
         egui::SidePanel::left("gestures").show(ctx, |ui| {
             ui.label("Gestures:");
             egui::ScrollArea::vertical().show(ui, |ui| {
